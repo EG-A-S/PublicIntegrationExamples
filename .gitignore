@@ -1,0 +1,11 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/LindbakAccountServices/.vs
+/LindbakAccountServices/packages
+/LindbakAccountServices/Sport/bin
+/LindbakAccountServices/Sport/obj
+*.vssscc
+*.vspscc
+*.user
