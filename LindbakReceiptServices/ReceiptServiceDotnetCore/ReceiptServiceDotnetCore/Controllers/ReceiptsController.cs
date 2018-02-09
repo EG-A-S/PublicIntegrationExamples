@@ -26,6 +26,7 @@ namespace ReceiptServiceDotnetCore.Controllers
     public class Receipt
     {
         public string Id { get; set; }
+        public string Nsid { get; set; }
         public ReceiptIdentificator Cid { get; set; }
         public string PartitionKey { get; set; }
         public decimal TotalAmount { get; set; }
@@ -53,6 +54,7 @@ namespace ReceiptServiceDotnetCore.Controllers
     public struct ReceiptDto
     {
         public string Id { get; set; }
+        public string Nsid { get; set; }
         public decimal TotalAmount { get; set; }
         public long EndDateTimeUtc { get; set; }
         public string StoreName { get; set; }
@@ -62,6 +64,7 @@ namespace ReceiptServiceDotnetCore.Controllers
             return new ReceiptDto
             {
                 Id = receipt.Id,
+                Nsid = receipt.Nsid,
                 TotalAmount = receipt.TotalAmount,
                 EndDateTimeUtc = receipt.EndDateTimeUtc.ToUnixTimeMilliseconds(),
                 StoreName = receipt.StoreName
