@@ -26,6 +26,7 @@ namespace ReceiptServiceDotnetCore.Controllers
     public class Receipt
     {
         public string Id { get; set; }
+        public string Nsid { get; set; }
         public ReceiptIdentificator Cid { get; set; }
         public string PartitionKey { get; set; }
         public decimal TotalAmount { get; set; }
@@ -53,6 +54,7 @@ namespace ReceiptServiceDotnetCore.Controllers
     public struct ReceiptDto
     {
         public string Id { get; set; }
+        public string Nsid { get; set; }
         public decimal TotalAmount { get; set; }
         public long EndDateTimeUtc { get; set; }
         public string StoreName { get; set; }
@@ -62,6 +64,7 @@ namespace ReceiptServiceDotnetCore.Controllers
             return new ReceiptDto
             {
                 Id = receipt.Id,
+                Nsid = receipt.Nsid,
                 TotalAmount = receipt.TotalAmount,
                 EndDateTimeUtc = receipt.EndDateTimeUtc.ToUnixTimeMilliseconds(),
                 StoreName = receipt.StoreName
@@ -81,6 +84,7 @@ namespace ReceiptServiceDotnetCore.Controllers
         private const string ClientSecret = "{my_client_secret}";
         private const string ClientScope = "receiptapiclient";
 
+
         public ReceiptsController()
         {
         }
@@ -90,7 +94,7 @@ namespace ReceiptServiceDotnetCore.Controllers
         {
             var tokenResponse = await GetTokenAsync();
 
-            HttpClient client = new HttpClient();
+            var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.BaseAddress = new Uri(receiptServiceUrl);
@@ -133,16 +137,9 @@ namespace ReceiptServiceDotnetCore.Controllers
                     return StatusCode(StatusCodes.Status500InternalServerError);
                 }
 
-                var receipts = new List<ReceiptDto>();
-
-                foreach (var receipt in result.Value)
-                {
-                    if (receipt.Flags == null || receipt.Flags.IsDeleted)
-                    {
-                        continue;
-                    }
-                    receipts.Add(ReceiptDto.FromReceipt(receipt));
-                }
+                var receipts = (from receipt in result.Value
+                                where receipt.Flags != null && !receipt.Flags.IsDeleted
+                                select ReceiptDto.FromReceipt(receipt)).ToList();
 
                 return Ok(receipts);
             }
@@ -179,9 +176,7 @@ namespace ReceiptServiceDotnetCore.Controllers
             }
             catch (Exception e)
             {
-                var response = new HttpResponseMessage();
-                response.StatusCode = System.Net.HttpStatusCode.NotFound;
-                return response;
+                return new HttpResponseMessage {StatusCode = System.Net.HttpStatusCode.NotFound};
             }
         }
 
