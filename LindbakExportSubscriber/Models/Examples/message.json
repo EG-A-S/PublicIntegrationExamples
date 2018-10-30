@@ -1,0 +1,7 @@
+﻿{
+  "BlobType": "TestData",
+  "CorrelationId": "7832742-3987492-3874923-874928374",
+  "ContentType": "application/x-jsonlines",
+  "ContentEncoding": "gzip",
+  "Uri": "https://somestorage.blob.core.windows.net/testint/TestDataBatchXYZ.gzip"
+}
