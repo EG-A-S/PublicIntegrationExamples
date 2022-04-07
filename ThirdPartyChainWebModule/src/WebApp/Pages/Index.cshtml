@@ -1,0 +1,16 @@
+﻿@page
+
+<p>EG Tenant ID: @User.FindFirst("lrstid")?.Value</p>
+<p>User id: @User.FindFirst("sub")?.Value</p>
+<p>Name: @User.Identity?.Name</p>
+<div>
+    <p>Granted permissions:</p>
+    <ul>
+        @foreach(var role in User.FindAll("permission"))
+        {
+            <li>@role.Value</li>
+        }
+    </ul>
+</div>
+
+<a asp-page="SignOut">Sign-out to trigger re-authentication</a>
