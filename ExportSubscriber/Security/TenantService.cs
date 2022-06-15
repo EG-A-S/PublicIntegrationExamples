@@ -21,6 +21,8 @@ namespace ExportSubscriber.Security
         private readonly string _integrationName;
         private readonly string _certificateCommonName;
         private readonly string _resourceId;
+        private readonly string _authorityUrl;
+        private readonly string _clientId;
         private AuthenticationContext _authContext;
 
         public TenantService(Config config)
@@ -31,26 +33,26 @@ namespace ExportSubscriber.Security
             _integrationName = config.IntegrationPartnerName;
             _certificateCommonName = config.TenantServiceCertificateName;
             _resourceId = config.TenantServiceResourceId;
+            _authorityUrl = config.AuthorityUrl;
+            _clientId = config.ClientId;
         }
 
         public async Task<ConnectionSecrets> GetSecrets()
         {
             var certificate = GetFromCertificateStore(_certificateCommonName);
 
-            var (authUrl, clientId) = GetDetailsFromCertificate(certificate);
-
             if (_authContext == null)
-                _authContext = new AuthenticationContext(authUrl, true);
+                _authContext = new AuthenticationContext(_authorityUrl, true);
 
             var setup = new
             {
-                ClientId = clientId,
+                ClientId = _clientId,
                 X509Certificate = certificate,
                 ServiceUrl = _tenantServiceUrl,
                 ServiceResourceId = _resourceId
             };
 
-            Console.WriteLine($"Acquiring token from {authUrl} using client id {clientId}...");
+            Console.WriteLine($"Acquiring token from {_authorityUrl} using client id {setup.ClientId}...");
             var token = (await _authContext.AcquireTokenAsync(setup.ServiceResourceId,
                 new ClientAssertionCertificate(setup.ClientId, setup.X509Certificate))).AccessToken;
 
@@ -84,40 +86,6 @@ namespace ExportSubscriber.Security
                 // Return the newest certificate, enables certificate rotation.
                 return certs.OrderByDescending(c => c.NotAfter).First();
             }
-        }
-
-        private static (string authUrl, string clientId) GetDetailsFromCertificate(X509Certificate2 certificate)
-        {
-            var certificateSubjectName = certificate?.SubjectName?.Name;
-
-            if (string.IsNullOrWhiteSpace(certificateSubjectName))
-            {
-                throw new ArgumentException("Invalid certificate subject name");
-            }
-
-            var parts = certificateSubjectName.Split(new[] {','}, StringSplitOptions.RemoveEmptyEntries);
-            var error =
-                $"Subject name does not contain clientId and authorityUrl, subject name is: {certificateSubjectName}";
-            if (parts.Length < 3)
-            {
-                throw new ArgumentException(error);
-            }
-
-            var values = new System.Collections.Generic.Dictionary<string, string>();
-            foreach (var part in parts)
-            {
-                if (string.IsNullOrWhiteSpace(part) || !part.Contains("="))
-                    continue;
-                var elementParts = part.Split(new[] {'='}, StringSplitOptions.RemoveEmptyEntries);
-                values[elementParts[0].Trim()] = elementParts[1].Trim();
-            }
-
-            if (!values.ContainsKey("OU") || !values.ContainsKey("C"))
-            {
-                throw new ArgumentException(error);
-            }
-
-            return (values["C"], values["OU"]);
         }
     }
 }

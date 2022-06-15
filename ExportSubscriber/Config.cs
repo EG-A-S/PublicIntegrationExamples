@@ -7,6 +7,8 @@ namespace ExportSubscriber
         public string TenantServiceUrl { get; set; }
         public string TenantServiceCertificateName { get; set; }
         public string TenantServiceResourceId { get; set; }
+        public string AuthorityUrl { get; set; }
+        public string ClientId { get; set; }
         public string OutputDirectory { get; set; }
         public string IntegrationPartnerName { get; private set; }
 
@@ -17,6 +19,8 @@ namespace ExportSubscriber
                 TenantServiceUrl = build["TenantServiceUrl"],
                 TenantServiceCertificateName = build["TenantServiceCertificateName"],
                 TenantServiceResourceId = build["TenantServiceResourceId"],
+                AuthorityUrl = build["AuthorityUrl"],
+                ClientId = build["ClientId"],
                 IntegrationPartnerName = build["IntegrationPartnerName"],
                 OutputDirectory = build["OutputDirectory"],
             };
