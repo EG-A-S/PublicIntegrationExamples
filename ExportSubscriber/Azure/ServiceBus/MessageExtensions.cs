@@ -1,12 +1,12 @@
 ﻿using System.Text;
-using Microsoft.Azure.ServiceBus;
+using Azure.Messaging.ServiceBus;
 using Newtonsoft.Json;
 
 namespace ExportSubscriber.Azure.ServiceBus
 {
     public static class MessageExtensions
     {
-        public static T DeserializeJsonBody<T>(this Message message)
+        public static T DeserializeJsonBody<T>(this ServiceBusMessage message)
         {
             return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(message.Body));
         }

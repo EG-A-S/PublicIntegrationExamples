@@ -1,7 +1,6 @@
 ﻿using System;
-using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Azure.ServiceBus;
+using Azure.Messaging.ServiceBus;
 
 namespace ExportSubscriber.Azure.ServiceBus
 {
@@ -12,43 +11,57 @@ namespace ExportSubscriber.Azure.ServiceBus
     /// </summary>
     public class ExportSubscriptionClient
     {
-        private readonly ISubscriptionClient _client;
+        private readonly ServiceBusClient _client;
         private DateTimeOffset _pauseUntil = DateTimeOffset.MinValue;
+        private ServiceBusProcessor _processor;
+        private readonly string _topicName;
+        private readonly string _subscriptionName;
+
+        public string TopicName => _topicName;
+        public string SubscriptionName => _subscriptionName;
 
         public static ExportSubscriptionClient Create(string sbConnectionString, string sbSubscriptionName)
         {
-            var serviceBusConnectionStringBuilder = new ServiceBusConnectionStringBuilder(sbConnectionString);
-
-            return new ExportSubscriptionClient(new SubscriptionClient(serviceBusConnectionStringBuilder, sbSubscriptionName));
+            return new ExportSubscriptionClient(sbConnectionString, sbSubscriptionName);
         }
 
-        public ExportSubscriptionClient(ISubscriptionClient client)
+        public ExportSubscriptionClient(string sbConnectionString, string sbSubscriptionName)
+            : this(
+                  new ServiceBusClient(
+                      sbConnectionString, 
+                      new ServiceBusClientOptions { Identifier = sbSubscriptionName }), 
+                  ServiceBusConnectionStringProperties.Parse(sbConnectionString).EntityPath, 
+                  sbSubscriptionName)
+        {
+        }
+
+        public ExportSubscriptionClient(ServiceBusClient client, string topicName, string subscriptionName)
         {
             _client = client;
+            _topicName = topicName;
+            _subscriptionName = subscriptionName;
         }
 
-        public void StartListening(Func<Message, CancellationToken, Task> newMessageCallback, Func<ExceptionReceivedEventArgs, Task> newMessageExceptionCallback)
+        public async Task StartListeningAsync(Func<ProcessMessageEventArgs, Task> newMessageCallback, Func<ProcessErrorEventArgs, Task> newMessageExceptionCallback)
         {
-            var options = new MessageHandlerOptions(newMessageExceptionCallback)
+            var options = new ServiceBusProcessorOptions
             {
                 MaxConcurrentCalls = 1,
-                AutoComplete = false
+                AutoCompleteMessages = false,
+                PrefetchCount = 10,
             };
-            _client.PrefetchCount = 10;
-            _client.RegisterMessageHandler(newMessageCallback, options);
+
+            _processor = _client.CreateProcessor(TopicName, SubscriptionName, options);
+
+            _processor.ProcessMessageAsync += newMessageCallback;
+            _processor.ProcessErrorAsync += newMessageExceptionCallback;
+            await _processor.StartProcessingAsync();
         }
 
         public async Task StopListening()
         {
-            await _client.CloseAsync();
-        }
-
-        public async Task CompleteMessage(Message message)
-        {
-            // We have turned off auto complete, and must complete the message when everything is ok.
-            // This must be done within 30 seconds, otherwise other clients of the subscription might handle the message.
-            // Because of this, ProcessFile should never take more than 30 seconds, or should be asynchronous
-            await _client.CompleteAsync(message.SystemProperties.LockToken);
+            await _processor.DisposeAsync();
+            await _client.DisposeAsync();
         }
 
         public void StartPauseForMinutes(int minutes)
@@ -56,13 +69,13 @@ namespace ExportSubscriber.Azure.ServiceBus
             _pauseUntil = DateTimeOffset.UtcNow.AddMinutes(minutes);
         }
 
-        public async Task<bool> WaitForPause(Message message, CancellationToken cancellationToken)
+        public async Task<bool> WaitForPause()
         {
             if (_pauseUntil > DateTimeOffset.UtcNow)
             {
-                await _client.AbandonAsync(message.SystemProperties.LockToken);
+                await _client.DisposeAsync();
                 Console.WriteLine("Pausing message handling until we are able to get new secrets.");
-                await Task.Delay(_pauseUntil.Subtract(DateTimeOffset.UtcNow), cancellationToken);
+                await Task.Delay(_pauseUntil.Subtract(DateTimeOffset.UtcNow));
                 return true;
             }
             return false;

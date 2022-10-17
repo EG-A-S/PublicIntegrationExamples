@@ -4,14 +4,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
-using IdentityModel.Client;
-using System.Web;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.AspNetCore.Http;
-using System.Net.Http.Formatting;
+using Microsoft.Identity.Client;
 
 namespace ReceiptServiceDotnetCore.Controllers
 {
@@ -76,14 +71,12 @@ namespace ReceiptServiceDotnetCore.Controllers
     [Route("api/receipts")]
     public class ReceiptsController : Controller
     {
-        private const string memberID = "{my_member_id}"; // Receipts belonging to this member will be fetched
-        private const string tenantID = "{my_tenant_id}"; // Company tenant id
-        private const string receiptServiceUrl = "https://lrsreceiptservice.azurewebsites.net";
-        private const string authorityUrl = "https://lrsloyaltytest.azurewebsites.net/{my_tenant_id}/identity";
-        private const string ClientId = "{my_client_id}";
-        private const string ClientSecret = "{my_client_secret}";
-        private const string ClientScope = "receiptapiclient";
-
+        private const string memberID = "123"; // Receipts belonging to this member will be fetched
+        private const string receiptServiceUrl = "https://receiptservice.egretail-dev.cloud";
+        private const string receiptServiceResourceId = "568312bf-50b9-4027-82e2-bd8235acf65f";
+        private const string authorityUrl = "https://login.microsoftonline.com/f90c551f-145b-45fe-9610-c99bc6a0a464";
+        private const string ClientId = "";
+        private const string ClientSecret = "";
 
         public ReceiptsController()
         {
@@ -92,32 +85,26 @@ namespace ReceiptServiceDotnetCore.Controllers
 
         private async Task<HttpClient> GetHttpClient()
         {
-            var tokenResponse = await GetTokenAsync();
+            IConfidentialClientApplication app = ConfidentialClientApplicationBuilder.Create(ClientId)
+                .WithClientSecret(ClientSecret)
+                .WithAuthority(authorityUrl)
+                .Build();
 
             var client = new HttpClient();
             client.DefaultRequestHeaders.Accept.Clear();
             client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
             client.BaseAddress = new Uri(receiptServiceUrl);
-            client.SetBearerToken(tokenResponse.AccessToken);
+
+            string[] scopes = new string[] { $"{receiptServiceResourceId}/.default" };
+            var accessToken = await app.AcquireTokenForClient(scopes).ExecuteAsync();
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", accessToken.AccessToken);
 
             return client;
         }
 
-
-        private async Task<TokenResponse> GetTokenAsync()
-        {
-            var tokenClient = new TokenClient(
-                authorityUrl + (authorityUrl.EndsWith("/") ? "" : "/") + "connect/token",
-                ClientId,
-                ClientSecret);
-
-            return await tokenClient.RequestClientCredentialsAsync(ClientScope);
-        }
-
-
         [HttpGet]
         [Route("")]
-        public async Task<IActionResult> Get([FromQuery] int top = -1)
+        public async Task<IActionResult> Get([FromQuery] int top = 10)
         {
             var query = $"?$filter=loyaltyId eq '{memberID}'";
             query += "&$orderBy=endDateTimeUtc desc";
@@ -143,7 +130,7 @@ namespace ReceiptServiceDotnetCore.Controllers
 
                 return Ok(receipts);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
                 return StatusCode(StatusCodes.Status500InternalServerError);
             }
@@ -174,7 +161,7 @@ namespace ReceiptServiceDotnetCore.Controllers
 
                 return result;
             }
-            catch (Exception e)
+            catch
             {
                 return new HttpResponseMessage {StatusCode = System.Net.HttpStatusCode.NotFound};
             }

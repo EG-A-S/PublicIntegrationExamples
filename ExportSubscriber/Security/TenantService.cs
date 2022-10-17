@@ -5,7 +5,7 @@ using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using Microsoft.Identity.Client;
 using Newtonsoft.Json;
 
 namespace ExportSubscriber.Security
@@ -23,7 +23,7 @@ namespace ExportSubscriber.Security
         private readonly string _resourceId;
         private readonly string _authorityUrl;
         private readonly string _clientId;
-        private AuthenticationContext _authContext;
+        private IConfidentialClientApplication _authContext;
 
         public TenantService(Config config)
         {
@@ -39,29 +39,26 @@ namespace ExportSubscriber.Security
 
         public async Task<ConnectionSecrets> GetSecrets()
         {
-            var certificate = GetFromCertificateStore(_certificateCommonName);
-
             if (_authContext == null)
-                _authContext = new AuthenticationContext(_authorityUrl, true);
-
-            var setup = new
             {
-                ClientId = _clientId,
-                X509Certificate = certificate,
-                ServiceUrl = _tenantServiceUrl,
-                ServiceResourceId = _resourceId
-            };
+                var certificate = GetFromCertificateStore(_certificateCommonName);
 
-            Console.WriteLine($"Acquiring token from {_authorityUrl} using client id {setup.ClientId}...");
-            var token = (await _authContext.AcquireTokenAsync(setup.ServiceResourceId,
-                new ClientAssertionCertificate(setup.ClientId, setup.X509Certificate))).AccessToken;
+                _authContext = ConfidentialClientApplicationBuilder.Create(_clientId)
+                    .WithAuthority(_authorityUrl)
+                    .WithCertificate(certificate)
+                    .Build();
+            }
+
+            Console.WriteLine($"Acquiring token from '{_authorityUrl}' using client id '{_clientId}'...");
+            var scopes = new[] { $"{_resourceId}/.default" };
+            var authResult = await _authContext.AcquireTokenForClient(scopes).ExecuteAsync();
 
             Console.WriteLine($"Acquiring temporary connection secrets from {_tenantServiceUrl.Host}...");
             using var httpClient = new HttpClient();
-            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
             var postData = JsonConvert.SerializeObject(new { integrationName = _integrationName });
             using var stringContent = new StringContent(postData, Encoding.UTF8, "application/json");
-            using var result = await httpClient.PostAsync(setup.ServiceUrl, stringContent);
+            using var result = await httpClient.PostAsync(_tenantServiceUrl, stringContent);
             result.EnsureSuccessStatusCode(); // If this gives you 403, you have not been granted the proper permissions yet.
             var responseBody = await result.Content.ReadAsStringAsync();
             var secrets = JsonConvert.DeserializeObject<ConnectionSecrets>(responseBody);

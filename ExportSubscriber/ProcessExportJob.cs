@@ -6,13 +6,14 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
+using Azure.Messaging.ServiceBus;
 using ExportSubscriber.Azure.BlobStorage;
 using ExportSubscriber.Azure.ServiceBus;
 using ExportSubscriber.LocalStorage;
 using ExportSubscriber.Models;
 using ExportSubscriber.Security;
-using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
+using SendGrid.Helpers.Errors.Model;
 
 namespace ExportSubscriber
 {
@@ -36,7 +37,7 @@ namespace ExportSubscriber
             await RefreshSecrets();
             await ReCreateServiceBusClient();
             ReCreateBlobClient();
-            Console.WriteLine("Listening for new messages...");
+            Console.WriteLine($"Listening for new messages at topic {_subscriptionClient.TopicName} using subscription {_subscriptionClient.SubscriptionName}...");
         }
 
         private async Task ReCreateServiceBusClient()
@@ -47,7 +48,7 @@ namespace ExportSubscriber
             }
 
             _subscriptionClient = ExportSubscriptionClient.Create(_currentSecrets.serviceBusSubscriptionConnectionString, _currentSecrets.serviceBusSubscriptionName);
-            _subscriptionClient.StartListening(MessageHandler, MessageHandler_ExceptionHandler);
+            await _subscriptionClient.StartListeningAsync(MessageHandler, MessageHandler_ExceptionHandler);
         }
 
         private void ReCreateBlobClient()
@@ -71,9 +72,9 @@ namespace ExportSubscriber
             _currentSecrets = await _tenantService.GetSecrets();
         }
 
-        private async Task MessageHandler(Message message, CancellationToken cancellationToken)
+        private async Task MessageHandler(ProcessMessageEventArgs args)
         {
-            if (await _subscriptionClient.WaitForPause(message, cancellationToken))
+            if (await _subscriptionClient.WaitForPause())
             {
                 return;
             }
@@ -85,12 +86,12 @@ namespace ExportSubscriber
             AvailableBlobEvent metadata;
             try
             {
-                metadata = message.DeserializeJsonBody<AvailableBlobEvent>();
+                metadata = JsonConvert.DeserializeObject<AvailableBlobEvent>(args.Message.Body.ToString());
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Permanent error: {ex.Message}");
-                await _subscriptionClient.CompleteMessage(message);
+                await args.CompleteMessageAsync(args.Message);
                 return;
             }
 
@@ -99,15 +100,15 @@ namespace ExportSubscriber
 
             // Save incoming blob to a temporary file. This could of course be done in memory, or to some database
             var blobLocalStorage = LocalStorageUtility.GetNewWorkingFile();
-            await _blobDownloader.DownloadBlobAsync(metadata, blobLocalStorage, cancellationToken);
+            await _blobDownloader.DownloadBlobAsync(metadata, blobLocalStorage, new CancellationToken());
 
-            await ProcessFile(message.MessageId, metadata, blobLocalStorage);
-            await _subscriptionClient.CompleteMessage(message);
+            await ProcessFile(args.Message.MessageId, metadata, blobLocalStorage);
+            await args.CompleteMessageAsync(args.Message);
 
             LocalStorageUtility.RemoveWorkingFile(blobLocalStorage);
         }
 
-        private async Task MessageHandler_ExceptionHandler(ExceptionReceivedEventArgs args)
+        private async Task MessageHandler_ExceptionHandler(ProcessErrorEventArgs args)
         {
             // Check if connection info to ServiceBus has expired, if so, renew
             if (args.Exception is UnauthorizedException)

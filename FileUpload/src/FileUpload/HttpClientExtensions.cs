@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
-using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
@@ -25,10 +25,8 @@ namespace FileUpload
         public static async Task<TResponse> PostAsJsonAsync<TRequest, TResponse>(
             this HttpClient httpClient, string requestUri, TRequest data)
         {
-            var serializedRequest = JsonConvert.SerializeObject(data);
-            var content = new StringContent(serializedRequest);
-            content.Headers.ContentType = new MediaTypeHeaderValue("application/json");
-            var httpResponseMessage = await httpClient.PostAsync(requestUri, content);
+            
+            var httpResponseMessage = await httpClient.PostAsJsonAsync(requestUri, data);
             httpResponseMessage.EnsureSuccessStatusCode();
 
             var serializedResponse = await httpResponseMessage.Content.ReadAsStringAsync();
@@ -51,18 +49,16 @@ namespace FileUpload
             string fileName,
             IEnumerable<T> data)
         {
-            using (var contentStream = new MemoryStream())
-            {
-                data.WriteAsCompressedJsonLinesTo(contentStream);
-                var multipartFormDataContent = new MultipartFormDataContent
+            using var contentStream = new MemoryStream();
+            data.WriteAsCompressedJsonLinesTo(contentStream);
+            var multipartFormDataContent = new MultipartFormDataContent
                 {
                     { new StreamContent(contentStream), fileName, fileName }
                 };
-                multipartFormDataContent.Headers.ContentEncoding.Add("gzip");
+            multipartFormDataContent.Headers.ContentEncoding.Add("gzip");
 
-                var httpResponseMessage = await httpClient.PostAsync(requestUri, multipartFormDataContent);
-                httpResponseMessage.EnsureSuccessStatusCode();
-            }
+            var httpResponseMessage = await httpClient.PostAsync(requestUri, multipartFormDataContent);
+            httpResponseMessage.EnsureSuccessStatusCode();
         }
     }
 }
