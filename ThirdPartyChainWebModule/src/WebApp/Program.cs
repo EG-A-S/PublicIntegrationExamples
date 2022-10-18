@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.OAuth.Claims;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
+using Microsoft.IdentityModel.Protocols.OpenIdConnect;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -22,8 +23,10 @@ builder.Services
         // Client Id as specified by EG
         options.ClientId = securitySection["clientId"];
 
-        // Need both ID token and access token to be able to access user info endpoint
-        options.ResponseType = "id_token token";
+        // Use OpenID Connect Authorization Code Flow with Proof Key for Code Exchange (PKCE)
+        options.ResponseType = OpenIdConnectResponseType.Code;
+        options.UsePkce = true; // This is the default, but added here to signal its importance.
+
         // Get permission claims from UserInfoEndpoint
         options.GetClaimsFromUserInfoEndpoint = true;
         // Request tenant scope to include lrstid claim with EG Tenant ID for identity and api access tokens
