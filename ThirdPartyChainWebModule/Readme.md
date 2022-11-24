@@ -38,37 +38,90 @@ Multi-tenant applications fully integrated with Cloud Chain will register this m
 Sample module manifest:
 ``` json 
 {
-    "moduleCode": "CashSettlement",
-    "displayName": {
-        "en-US": "Cash Settlement",
-        "nb-NO": "Kontantoppgjør"
-    },
-    "description": {
-        "en-US": "TODO: Describe cash settlement Module",
-        "nb-NO": "TODO: Beskriv kontantoppgjør modul"
-    },
-    "permissions": {
-        "groups": [
-            {
-                "code": "CashSettlement",    
-                "displayName": {
-                    "en-US": "Cash Settlement",
-                    "nb-NO": "Kontantoppgjør"
-                }
-            }
+  "moduleCode": "CashSettlement",
+  "displayName": {
+    "en-US": "Cash Settlement",
+    "nb-NO": "Kontantoppgjør"
+  },
+  "description": {
+    "en-US": "TODO: Describe cash settlement Module",
+    "nb-NO": "TODO: Beskriv kontantoppgjør modul"
+  },
+  "permissions": {
+    "groups": [
+      {
+        "code": "CashSettlement",
+        "displayName": {
+          "en-US": "Cash Settlement",
+          "nb-NO": "Kontantoppgjør"
+        }
+      }
+    ],
+    "permissions": [
+      {
+        "code": "Access",
+        "permissionGroupCode": "CashSettlement",
+        "displayName": {
+          "en-US": "Full access to Cash Settlement",
+          "nb-NO": "Full tilgang til kontantopgjør"
+        }
+      }
+    ]
+  },
+  "menu": {
+    "mainMenuEntries": [
+      {
+        "code": "CashSettlement",
+        "order": 1,
+        "displayName": [
+          {
+            "key": "en-US",
+            "value": "Cash settlement"
+          },
+          {
+            "key": "nb-NO",
+            "value": "Kontantoppgjør"
+          }
         ],
-        "permissions": [
-            { 
-                "code": "Access",
-                "permissionGroupCode": "CashSettlement",
-                "displayName": {
-                    "en-US": "Full access to Cash Settlement",
-                    "nb-NO": "Full tilgang til kontantopgjør"
-                 }
-            }
+        "iconUrl": ""
+      }
+    ],
+    "subMenuEntries": [
+      {
+        "mainMenuCode": "CashSettlement",
+        "code": "CashSettlement",
+        "order": 1,
+        "displayName": [
+          {
+            "key": "en-US",
+            "value": "Cash settlement"
+          },
+          {
+            "key": "nb-NO",
+            "value": "Kontantoppgjør"
+          }
         ]
-    },
-    "menu": {}
+      }
+    ],
+    "menuItems": [
+      {
+        "subMenuCode": "CashSettlement-Sub",
+        "url": "/",
+        "code": "CashSettlement",
+        "order": 1,
+        "displayName": [
+          {
+            "key": "en-US",
+            "value": "Cash settlement"
+          },
+          {
+            "key": "nb-NO",
+            "value": "Kontantoppgjør"
+          }
+        ]
+      }
+    ]
+  }
 }
 ```
 
