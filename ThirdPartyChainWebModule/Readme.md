@@ -73,16 +73,10 @@ Sample module manifest:
       {
         "code": "CashSettlement",
         "order": 1,
-        "displayName": [
-          {
-            "key": "en-US",
-            "value": "Cash settlement"
-          },
-          {
-            "key": "nb-NO",
-            "value": "Kontantoppgjør"
-          }
-        ],
+        "displayName": {
+          "en-US": "Cash Settlement",
+          "nb-NO": "Kontantoppgjør"
+        },
         "iconUrl": ""
       }
     ],
@@ -91,34 +85,22 @@ Sample module manifest:
         "mainMenuCode": "CashSettlement",
         "code": "CashSettlement",
         "order": 1,
-        "displayName": [
-          {
-            "key": "en-US",
-            "value": "Cash settlement"
-          },
-          {
-            "key": "nb-NO",
-            "value": "Kontantoppgjør"
-          }
-        ]
+        "displayName": {
+          "en-US": "Cash Settlement",
+          "nb-NO": "Kontantoppgjør"
+        }
       }
     ],
     "menuItems": [
       {
-        "subMenuCode": "CashSettlement-Sub",
+        "subMenuCode": "CashSettlement",
         "url": "/",
         "code": "CashSettlement",
         "order": 1,
-        "displayName": [
-          {
-            "key": "en-US",
-            "value": "Cash settlement"
-          },
-          {
-            "key": "nb-NO",
-            "value": "Kontantoppgjør"
-          }
-        ]
+        "displayName": {
+          "en-US": "Cash Settlement",
+          "nb-NO": "Kontantoppgjør"
+        }
       }
     ]
   }
