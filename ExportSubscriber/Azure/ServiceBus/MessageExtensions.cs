@@ -1,6 +1,6 @@
 ﻿using System.Text;
+using System.Text.Json;
 using Azure.Messaging.ServiceBus;
-using Newtonsoft.Json;
 
 namespace ExportSubscriber.Azure.ServiceBus
 {
@@ -8,12 +8,12 @@ namespace ExportSubscriber.Azure.ServiceBus
     {
         public static T DeserializeJsonBody<T>(this ServiceBusMessage message)
         {
-            return JsonConvert.DeserializeObject<T>(Encoding.UTF8.GetString(message.Body));
+            return JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(message.Body));
         }
 
         public static string SerializeToJson<T>(this T obj)
         {
-            return JsonConvert.SerializeObject(obj);
+            return JsonSerializer.Serialize(obj);
         }
     }
 }

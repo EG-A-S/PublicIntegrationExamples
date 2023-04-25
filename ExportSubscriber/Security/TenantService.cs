@@ -4,9 +4,9 @@ using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 using Microsoft.Identity.Client;
-using Newtonsoft.Json;
 
 namespace ExportSubscriber.Security
 {
@@ -56,12 +56,12 @@ namespace ExportSubscriber.Security
             Console.WriteLine($"Acquiring temporary connection secrets from {_tenantServiceUrl.Host}...");
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-            var postData = JsonConvert.SerializeObject(new { integrationName = _integrationName });
+            var postData = JsonSerializer.Serialize(new { integrationName = _integrationName });
             using var stringContent = new StringContent(postData, Encoding.UTF8, "application/json");
             using var result = await httpClient.PostAsync(_tenantServiceUrl, stringContent);
             result.EnsureSuccessStatusCode(); // If this gives you 403, you have not been granted the proper permissions yet.
             var responseBody = await result.Content.ReadAsStringAsync();
-            var secrets = JsonConvert.DeserializeObject<ConnectionSecrets>(responseBody);
+            var secrets = JsonSerializer.Deserialize<ConnectionSecrets>(responseBody);
             secrets.TimeUpdatedUtc = DateTimeOffset.UtcNow;
             return secrets;
         }

@@ -3,6 +3,7 @@ using System.IO;
 using System.IO.Compression;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 using Azure;
@@ -12,8 +13,6 @@ using ExportSubscriber.Azure.ServiceBus;
 using ExportSubscriber.LocalStorage;
 using ExportSubscriber.Models;
 using ExportSubscriber.Security;
-using Newtonsoft.Json;
-using SendGrid.Helpers.Errors.Model;
 
 namespace ExportSubscriber
 {
@@ -86,7 +85,7 @@ namespace ExportSubscriber
             AvailableBlobEvent metadata;
             try
             {
-                metadata = JsonConvert.DeserializeObject<AvailableBlobEvent>(args.Message.Body.ToString());
+                metadata = JsonSerializer.Deserialize<AvailableBlobEvent>(args.Message.Body.ToString());
             }
             catch (Exception ex)
             {
@@ -111,7 +110,7 @@ namespace ExportSubscriber
         private async Task MessageHandler_ExceptionHandler(ProcessErrorEventArgs args)
         {
             // Check if connection info to ServiceBus has expired, if so, renew
-            if (args.Exception is UnauthorizedException)
+            if (args.Exception is UnauthorizedAccessException)
             {
                 await RefreshSecrets();
                 await ReCreateServiceBusClient();
@@ -155,7 +154,7 @@ namespace ExportSubscriber
             while ((jsonLine = await streamReader.ReadLineAsync()) != null)
             {
                 // Deserialize the line according to the contract and do something to it (in this example, just print it and dump to a file)
-                var testData = JsonConvert.DeserializeObject<TestData>(jsonLine);
+                var testData = JsonSerializer.Deserialize<TestData>(jsonLine);
                 Console.WriteLine($" - Imported id={testData.Id}, name={testData.Name}, # of subitems {testData.Subitems?.Length}");
 
                 await LocalStorageUtility.WriteToFile(batchOutputFolder, i++, jsonLine);
