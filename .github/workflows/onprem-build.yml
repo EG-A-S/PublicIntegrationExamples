@@ -1,0 +1,14 @@
+name: Build this repo on-prem.
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  call-reusable-workflow:
+    uses: EG-A-S/GitHub-Actions-Tools/.github/workflows/tfs-trigger-build.yml@main
+    secrets:
+      inherit
