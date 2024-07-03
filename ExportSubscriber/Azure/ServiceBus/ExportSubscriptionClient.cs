@@ -48,7 +48,7 @@ namespace ExportSubscriber.Azure.ServiceBus
             {
                 throw new ArgumentException("Invalid connection string");
             }
-            return parts[3];
+            return "/" + parts[3];
         }
 
         public ExportSubscriptionClient(ServiceBusClient client, string topicName, string subscriptionName)
