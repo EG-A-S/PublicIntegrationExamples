@@ -30,9 +30,25 @@ namespace ExportSubscriber.Azure.ServiceBus
                   new ServiceBusClient(
                       sbConnectionString, 
                       new ServiceBusClientOptions { Identifier = sbSubscriptionName }), 
-                  ServiceBusConnectionStringProperties.Parse(sbConnectionString).EntityPath, 
+                  parseTipicName(sbConnectionString), 
                   sbSubscriptionName)
         {
+        }
+
+        private static string parseTipicName(string sbConnectionString)
+        {
+            string entityPath = ServiceBusConnectionStringProperties.Parse(sbConnectionString).EntityPath;
+            if(entityPath != null)
+            {
+                return entityPath;
+            }
+
+            string[] parts = sbConnectionString.Split('/');
+            if(parts.Length < 4)
+            {
+                throw new ArgumentException("Invalid connection string");
+            }
+            return parts[3];
         }
 
         public ExportSubscriptionClient(ServiceBusClient client, string topicName, string subscriptionName)

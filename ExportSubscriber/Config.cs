@@ -11,6 +11,7 @@ namespace ExportSubscriber
         public string ClientId { get; set; }
         public string OutputDirectory { get; set; }
         public string IntegrationPartnerName { get; private set; }
+        public string UseNewSBConnectionStringFormat  {get; set;}
 
         public static Config Read(IConfigurationRoot build)
         {
@@ -23,6 +24,7 @@ namespace ExportSubscriber
                 ClientId = build["ClientId"],
                 IntegrationPartnerName = build["IntegrationPartnerName"],
                 OutputDirectory = build["OutputDirectory"],
+                UseNewSBConnectionStringFormat = build["UseNewSBConnectionStringFormat"]
             };
         }
     }

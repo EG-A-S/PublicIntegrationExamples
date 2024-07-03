@@ -23,6 +23,7 @@ namespace ExportSubscriber.Security
         private readonly string _resourceId;
         private readonly string _authorityUrl;
         private readonly string _clientId;
+        private readonly string _useNewSBConnectionStringFormat;
         private IConfidentialClientApplication _authContext;
 
         public TenantService(Config config)
@@ -35,6 +36,7 @@ namespace ExportSubscriber.Security
             _resourceId = config.TenantServiceResourceId;
             _authorityUrl = config.AuthorityUrl;
             _clientId = config.ClientId;
+            _useNewSBConnectionStringFormat = config.UseNewSBConnectionStringFormat == null ? "true" : config.UseNewSBConnectionStringFormat;
         }
 
         public async Task<ConnectionSecrets> GetSecrets()
@@ -56,7 +58,7 @@ namespace ExportSubscriber.Security
             Console.WriteLine($"Acquiring temporary connection secrets from {_tenantServiceUrl.Host}...");
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-            var postData = JsonSerializer.Serialize(new { integrationName = _integrationName });
+            var postData = JsonSerializer.Serialize(new { integrationName = _integrationName, useNewSBConnectionStringFormat = _useNewSBConnectionStringFormat });
             using var stringContent = new StringContent(postData, Encoding.UTF8, "application/json");
             using var result = await httpClient.PostAsync(_tenantServiceUrl, stringContent);
             result.EnsureSuccessStatusCode(); // If this gives you 403, you have not been granted the proper permissions yet.

@@ -17,7 +17,7 @@ namespace ExportSubscriber
             await job.Start();
 
             Console.WriteLine("Press any key to exit");
-            await Task.Run(() => { Console.ReadKey(); });
+            await Task.Run(() => { Console.Read(); });
         }
     }
 }
