@@ -5,10 +5,13 @@ on:
     branches:
       - main
       - master
+      - release**
   workflow_dispatch:
+  schedule:
+    - cron: "35 1 * * *"
 
 jobs:
   call-reusable-workflow:
     uses: EG-A-S/GitHub-Actions-Tools/.github/workflows/tfs-trigger-build.yml@main
-    secrets:
-      inherit
+    secrets: inherit
+    permissions: write-all
