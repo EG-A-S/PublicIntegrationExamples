@@ -22,7 +22,7 @@ namespace ExportSubscriber
                 AuthorityUrl = build["AuthorityUrl"],
                 ClientId = build["ClientId"],
                 IntegrationPartnerName = build["IntegrationPartnerName"],
-                OutputDirectory = build["OutputDirectory"],
+                OutputDirectory = build["OutputDirectory"]
             };
         }
     }

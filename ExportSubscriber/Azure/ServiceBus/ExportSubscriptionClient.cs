@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Azure.Messaging.ServiceBus;
 
@@ -29,10 +30,16 @@ namespace ExportSubscriber.Azure.ServiceBus
             : this(
                   new ServiceBusClient(
                       sbConnectionString, 
-                      new ServiceBusClientOptions { Identifier = sbSubscriptionName }), 
-                  ServiceBusConnectionStringProperties.Parse(sbConnectionString).EntityPath, 
+                      new ServiceBusClientOptions { Identifier = sbSubscriptionName }),
+                  ParseTopicName(sbConnectionString), 
                   sbSubscriptionName)
         {
+        }
+
+        private static string ParseTopicName(string sbConnectionString)
+        {
+            return ServiceBusConnectionStringProperties.Parse(sbConnectionString).EntityPath?.Trim('/').Split('/').FirstOrDefault()
+            ?? throw new ArgumentException("Topic missing from connection string entity path");
         }
 
         public ExportSubscriptionClient(ServiceBusClient client, string topicName, string subscriptionName)

@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
@@ -56,12 +57,11 @@ namespace ExportSubscriber.Security
             Console.WriteLine($"Acquiring temporary connection secrets from {_tenantServiceUrl.Host}...");
             using var httpClient = new HttpClient();
             httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", authResult.AccessToken);
-            var postData = JsonSerializer.Serialize(new { integrationName = _integrationName });
-            using var stringContent = new StringContent(postData, Encoding.UTF8, "application/json");
-            using var result = await httpClient.PostAsync(_tenantServiceUrl, stringContent);
+            var result = await httpClient.PostAsJsonAsync(
+                _tenantServiceUrl,
+                new { integrationName = _integrationName, useNewSBConnectionStringFormat = true });
             result.EnsureSuccessStatusCode(); // If this gives you 403, you have not been granted the proper permissions yet.
-            var responseBody = await result.Content.ReadAsStringAsync();
-            var secrets = JsonSerializer.Deserialize<ConnectionSecrets>(responseBody);
+            var secrets = await result.Content.ReadFromJsonAsync<ConnectionSecrets>();
             secrets.TimeUpdatedUtc = DateTimeOffset.UtcNow;
             return secrets;
         }
