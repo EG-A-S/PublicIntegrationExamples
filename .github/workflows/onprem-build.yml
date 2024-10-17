@@ -12,6 +12,7 @@ on:
 
 jobs:
   call-reusable-workflow:
+    if: github.repository == 'EG-A-S/Public-IntegrationExamples'
     uses: EG-A-S/GitHub-Actions-Tools/.github/workflows/tfs-trigger-build.yml@main
     secrets: inherit
     permissions: write-all

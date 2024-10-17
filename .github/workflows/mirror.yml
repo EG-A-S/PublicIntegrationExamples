@@ -1,0 +1,24 @@
+name: Mirror this private repo to public GitHub repo
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+
+jobs:
+  mirror:
+    if: github.repository == 'EG-A-S/Public-IntegrationExamples'
+    runs-on: k8s
+    steps:
+      - name: clone repository to mirror
+        run: |
+          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/EG-A-S/Public-IntegrationExamples
+          cd Public-IntegrationExamples
+          pwd
+          ls -la
+      - name: push mirror
+        run: |
+          cd Public-IntegrationExamples
+          git remote -v
+          git push --mirror https://${{ secrets.GITHUB_TOKEN }}@github.com/EG-A-S/PublicIntegrationExamples
