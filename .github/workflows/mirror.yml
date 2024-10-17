@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: clone repository to mirror
         run: |
-          git clone https://${{ secrets.GITHUB_TOKEN }}@github.com/EG-A-S/Public-IntegrationExamples
+          git clone https://${{ secrets.GIT_TOKEN }}@github.com/EG-A-S/Public-IntegrationExamples
           cd Public-IntegrationExamples
           pwd
           ls -la
@@ -21,4 +21,4 @@ jobs:
         run: |
           cd Public-IntegrationExamples
           git remote -v
-          git push --mirror https://${{ secrets.GITHUB_TOKEN }}@github.com/EG-A-S/PublicIntegrationExamples
+          git push --mirror https://${{ secrets.GIT_TOKEN }}@github.com/EG-A-S/PublicIntegrationExamples
